@@ -46,8 +46,10 @@ object ChordParser {
             }
     }
 
-    private val DIRECTIVE = Regex("^\\s*\\{\\s*([a-zA-Z_]+)\\s*:?\\s*(.*?)\\s*}\\s*$")
-    private val INLINE_CHORD = Regex("\\[([^\\]]{1,12})]")
+    // Android's regex engine (ICU) rejects an unescaped closing brace or bracket that a
+    // desktop JVM accepts, so every literal { } [ ] here is escaped.
+    private val DIRECTIVE = Regex("^\\s*\\{\\s*([a-zA-Z_]+)\\s*:?\\s*(.*?)\\s*\\}\\s*$")
+    private val INLINE_CHORD = Regex("\\[([^\\]]{1,12})\\]")
     private val TOKEN = Regex("\\S+")
     private val SECTION_HINT = Regex(
         "^\\s*\\(?\\s*(verse|chorus|bridge|intro|outro|tag|pre-?chorus|refrain|interlude|instrumental|ending|coda|vamp|turnaround)\\b.*",
