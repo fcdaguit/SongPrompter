@@ -69,7 +69,13 @@ class OnlineSongRepository(private val context: Context) {
             )
         )
 
-        private val SONG_EXTENSIONS = listOf(".cho", ".chopro", ".chordpro", ".crd", ".onsong", ".pro", ".txt")
+        // Catalog browsing lists chord-sheet formats only. Plain .txt is left out here because
+        // repositories are full of licence notes and READMEs; a .txt chart still works through
+        // "Paste a raw URL" and Import File.
+        private val SONG_EXTENSIONS = listOf(".cho", ".chopro", ".chordpro", ".crd", ".onsong", ".pro")
+
+        /** File names that say nothing about the song; the folder name is used instead. */
+        private val GENERIC_STEMS = setOf("lyrics", "song", "chords", "chart", "index", "main")
     }
 
     private val client: OkHttpClient by lazy {
@@ -132,7 +138,10 @@ class OnlineSongRepository(private val context: Context) {
                         catalog = catalog.label
                     )
                 }
-                .sortedBy { it.title.lowercase() }
+                // English charts first, then the rest, each alphabetical.
+                .sortedWith(
+                    compareBy<RemoteSong> { !it.path.contains("/en/") }.thenBy { it.title.lowercase() }
+                )
 
             if (songs.isEmpty()) {
                 LoadResult.Error(
@@ -190,7 +199,20 @@ class OnlineSongRepository(private val context: Context) {
 
     private fun prettyTitle(path: String): String {
         val file = path.substringAfterLast('/')
-        val stem = file.substringBeforeLast('.')
+        var stem = file.substringBeforeLast('.')
+        if (stem.lowercase() in GENERIC_STEMS) {
+            // e.g. songs/en/at-calvary-i-am-free-ccZPwHZ9sf5/sources/lyrics.chordpro:
+            // every file is called "lyrics", so name the song after its folder.
+            val folders = path.split('/').dropLast(1)
+            val songFolder = folders.lastOrNull { it.lowercase() != "sources" && it.lowercase() != "source" }
+            if (songFolder != null) {
+                stem = songFolder
+                // Drop a trailing 11-character id ("-ccZPwHZ9sf5") when the folder carries one.
+                if (stem.length > 13 && stem[stem.length - 12] == '-') {
+                    stem = stem.substring(0, stem.length - 12)
+                }
+            }
+        }
         return stem.replace('_', ' ').replace('-', ' ').trim()
             .split(' ')
             .filter { it.isNotBlank() }
