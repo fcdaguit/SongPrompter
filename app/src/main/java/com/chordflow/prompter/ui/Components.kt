@@ -3,6 +3,7 @@ package com.chordflow.prompter.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,7 @@ suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTapGesture
     onLongPress: ((androidx.compose.ui.geometry.Offset) -> Unit)? = null,
     onTap: ((androidx.compose.ui.geometry.Offset) -> Unit)? = null
 ) {
-    androidx.compose.foundation.gestures.detectTapGestures(
+    detectTapGestures(
         onLongPress = onLongPress,
         onTap = onTap
     )
