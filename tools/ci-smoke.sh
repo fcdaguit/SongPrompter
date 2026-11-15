@@ -10,7 +10,6 @@ alive() { echo "PID after $1: [$(adb shell pidof $PKG | tr -d '\r')]"; }
 crash() { echo "===== CRASH LOG ($1) ====="; adb logcat -d -s AndroidRuntime:E | tail -60; adb logcat -c; }
 start() { adb shell am force-stop $PKG; adb logcat -c; adb shell am start -W -n $PKG/.MainActivity >/dev/null; sleep 8; }
 
-python3 tools/catalog-probe.py
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 start; look -; shot launch; alive launch; crash launch
 
@@ -19,9 +18,10 @@ adb shell input swipe 500 1500 500 300; sleep 2; look -; shot editor-preview
 look "inline"; sleep 2; shot editor-inline; look "lyrics only"; sleep 2; shot editor-lyrics-only; alive editor-toggles; crash editor-toggles
 
 start; look "download free songs"; sleep 15; look -; shot downloader; alive downloader; crash downloader
-adb shell wm size; look "Cmpilato Public Domain"; sleep 8; look -; shot downloader-preview
+look "search by title"; sleep 2; adb shell input text calvary; sleep 3; adb shell input keyevent 4; sleep 2; look -; look "at calvary"; sleep 8; look -; shot downloader-preview
 look "save to offline library"; sleep 5; look -; shot downloader-saved; alive download-save; crash download-save
 adb shell input keyevent 4; sleep 3; look -; shot library-after-download
+look "calvary"; sleep 5; look -; look "show chords"; sleep 3; look -; alive downloaded-song; crash downloaded-song
 
 start; look "amazing grace"; sleep 5; look -; shot prompter-lyrics; alive prompter
 look "show chords"; sleep 3; shot prompter-above; look "⚙"; sleep 2; look "inline"; sleep 2; shot prompter-inline-settings; look "⚙"; sleep 2; shot prompter-inline
