@@ -38,9 +38,10 @@ look "⋮"; sleep 2; look "move down"; sleep 2; look "close"; sleep 2; look -; a
 step "SECOND SCREEN"
 adb shell settings put global overlay_display_devices 1280x720/213; sleep 6
 adb shell dumpsys display | grep -c "mDisplayId=" 
-look "amazing grace"; sleep 6; look -
+look "holy, holy, holy"; sleep 6; look -
+echo "DISPLAYS: $(adb shell dumpsys display | grep -c 'DisplayDeviceInfo{')"
 echo "SECOND SCREEN WINDOWS: $(adb shell dumpsys window windows | grep -c ChordFlowSecondScreen)"
-look "next"; sleep 2; look "next"; sleep 2; alive second-screen; crash second-screen
-adb shell settings put global overlay_display_devices null; sleep 5; look -; alive display-removed; crash display-removed
+look "next"; sleep 2; look "next"; sleep 2; echo "SECOND SCREEN WINDOWS AFTER NEXT: $(adb shell dumpsys window windows | grep -c ChordFlowSecondScreen)"; alive second-screen; crash second-screen
+adb shell settings put global overlay_display_devices null; sleep 5; look -; echo "SECOND SCREEN WINDOWS AFTER UNPLUG: $(adb shell dumpsys window windows | grep -c ChordFlowSecondScreen)"; alive display-removed; crash display-removed
 adb shell input keyevent 4; sleep 2; start; look -; alive relaunch; crash relaunch
 exit 0
