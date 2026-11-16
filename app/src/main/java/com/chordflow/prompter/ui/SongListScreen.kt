@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -51,23 +52,43 @@ fun SongListScreen(
     onOpenDownloader: () -> Unit
 ) {
     val songs by vm.songs.collectAsState()
-    val setlists by vm.setlists.collectAsState()
-    val activeSetlist by vm.activeSetlist.collectAsState()
+    val playlists by vm.playlists.collectAsState()
+    val entries by vm.entries.collectAsState()
+    val activePlaylist by vm.activePlaylist.collectAsState()
     val message by vm.message.collectAsState()
 
-    var showNewSetlist by remember { mutableStateOf(false) }
-    var newSetlistName by remember { mutableStateOf("") }
+    var showNewPlaylist by remember { mutableStateOf(false) }
+    var newPlaylistName by remember { mutableStateOf("") }
+    var confirmDeletePlaylist by remember { mutableStateOf(false) }
     var menuForSong by remember { mutableStateOf<Song?>(null) }
+    var pickerForSong by remember { mutableStateOf<Song?>(null) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) vm.importFile(uri) }
 
-    val inSetlist = remember(songs, activeSetlist) {
-        songs.filter { it.setlist == activeSetlist }.sortedBy { it.position }
+    val viewingLibrary = activePlaylist == Song.LIBRARY
+
+    // The Library lists every song. A playlist lists its own entries, in its own order.
+    val inList = remember(songs, entries, activePlaylist) {
+        if (activePlaylist == Song.LIBRARY) {
+            songs.sortedBy { it.position }
+        } else {
+            val byId = songs.associateBy { it.id }
+            entries.filter { it.playlist == activePlaylist }
+                .sortedBy { it.position }
+                .mapNotNull { byId[it.songId] }
+        }
     }
-    val allSetlists = remember(setlists, activeSetlist) {
-        (setlists + activeSetlist + Song.DEFAULT_SETLIST).distinct().sorted()
+    val allLists = remember(playlists) { listOf(Song.LIBRARY) + playlists }
+
+    fun moveInList(song: Song, delta: Int) {
+        val from = inList.indexOfFirst { it.id == song.id }
+        val to = from + delta
+        if (from < 0 || to !in inList.indices) return
+        val reordered = inList.toMutableList()
+        reordered.add(to, reordered.removeAt(from))
+        vm.applyOrder(reordered)
     }
 
     Column(
@@ -77,10 +98,10 @@ fun SongListScreen(
     ) {
         GreenHeader(
             title = "ChordFlow Prompter",
-            subtitle = "${songs.size} songs offline  |  ${allSetlists.size} setlists"
+            subtitle = "${songs.size} songs offline  |  ${playlists.size} playlists"
         )
 
-        // --- setlist chips -------------------------------------------------
+        // --- Library + playlist chips -------------------------------------
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -89,8 +110,8 @@ fun SongListScreen(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            allSetlists.forEach { name ->
-                val selected = name == activeSetlist
+            allLists.forEach { name ->
+                val selected = name == activePlaylist
                 Box(
                     modifier = Modifier
                         .border(
@@ -100,7 +121,7 @@ fun SongListScreen(
                         )
                         .background(if (selected) Phosphor.GreenGhost else Phosphor.Black)
                         .pointerInput(name) {
-                            detectTapGesturesCompat { vm.selectSetlist(name) }
+                            detectTapGesturesCompat { vm.selectPlaylist(name) }
                         }
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
@@ -111,7 +132,10 @@ fun SongListScreen(
                     )
                 }
             }
-            GreenMiniButton(text = "+ SETLIST", onClick = { showNewSetlist = true })
+            GreenMiniButton(text = "+ PLAYLIST", onClick = { showNewPlaylist = true })
+            if (!viewingLibrary) {
+                GreenMiniButton(text = "DELETE PLAYLIST", onClick = { confirmDeletePlaylist = true })
+            }
         }
 
         // --- actions -------------------------------------------------------
@@ -162,17 +186,20 @@ fun SongListScreen(
 
         GreenDivider(Modifier.padding(top = 6.dp))
 
-        if (inSetlist.isEmpty()) {
+        if (inList.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "NO SONGS IN \"${activeSetlist.uppercase()}\"\n\nDownload, import, or create one.",
+                    text = if (viewingLibrary)
+                        "NO SONGS YET\n\nDownload, import, or create one."
+                    else
+                        "NO SONGS IN \"${activePlaylist.uppercase()}\"\n\nOpen LIBRARY, tap the menu on a song,\nthen choose Add to Playlist.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Phosphor.GreenDim
                 )
             }
         } else {
             ReorderableSongList(
-                songs = inSetlist,
+                songs = inList,
                 onOpen = onOpenTeleprompter,
                 onMenu = { menuForSong = it },
                 onOrderChanged = { vm.applyOrder(it) },
@@ -181,31 +208,54 @@ fun SongListScreen(
         }
     }
 
-    // --- new setlist dialog -----------------------------------------------
-    if (showNewSetlist) {
+    // --- new playlist dialog ----------------------------------------------
+    if (showNewPlaylist) {
         AlertDialog(
-            onDismissRequest = { showNewSetlist = false },
+            onDismissRequest = { showNewPlaylist = false },
             containerColor = Phosphor.Black,
             titleContentColor = Phosphor.Green,
             textContentColor = Phosphor.Green,
-            title = { Text("NEW SETLIST", style = MaterialTheme.typography.titleMedium) },
+            title = { Text("NEW PLAYLIST", style = MaterialTheme.typography.titleMedium) },
             text = {
                 GreenTextField(
-                    value = newSetlistName,
-                    onValueChange = { newSetlistName = it },
-                    label = "Setlist name",
+                    value = newPlaylistName,
+                    onValueChange = { newPlaylistName = it },
+                    label = "Playlist name",
                     modifier = Modifier.fillMaxWidth()
                 )
             },
             confirmButton = {
                 GreenButton(text = "Create", filled = true, onClick = {
-                    vm.createSetlist(newSetlistName)
-                    newSetlistName = ""
-                    showNewSetlist = false
+                    vm.createPlaylist(newPlaylistName)
+                    newPlaylistName = ""
+                    showNewPlaylist = false
                 })
             },
             dismissButton = {
-                GreenButton(text = "Cancel", onClick = { showNewSetlist = false })
+                GreenButton(text = "Cancel", onClick = { showNewPlaylist = false })
+            }
+        )
+    }
+
+    // --- delete playlist confirmation ---------------------------------------
+    if (confirmDeletePlaylist && !viewingLibrary) {
+        AlertDialog(
+            onDismissRequest = { confirmDeletePlaylist = false },
+            containerColor = Phosphor.Black,
+            titleContentColor = Phosphor.Green,
+            textContentColor = Phosphor.Green,
+            title = { Text("DELETE PLAYLIST?", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                StatusLine("\"$activePlaylist\" will be removed. Its songs stay in the Library.")
+            },
+            confirmButton = {
+                GreenButton(text = "Delete", filled = true, onClick = {
+                    vm.deletePlaylist(activePlaylist)
+                    confirmDeletePlaylist = false
+                })
+            },
+            dismissButton = {
+                GreenButton(text = "Cancel", onClick = { confirmDeletePlaylist = false })
             }
         )
     }
@@ -227,7 +277,10 @@ fun SongListScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     StatusLine(
                         "Original key ${menuSong.originalKey} | " +
                             "sounding ${ChordTransposer.transposedKey(menuSong.originalKey, menuSong.transposeSemitones)}"
@@ -251,19 +304,39 @@ fun SongListScreen(
                             onEditSong(menuSong.id)
                         }
                     )
+                    GreenButton(
+                        text = "Add to Playlist",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            menuForSong = null
+                            pickerForSong = menuSong
+                        }
+                    )
+                    if (!viewingLibrary) {
+                        GreenButton(
+                            text = "Remove from This Playlist",
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                vm.removeFromPlaylist(menuSong, activePlaylist)
+                                menuForSong = null
+                            }
+                        )
+                    }
                     Text(
-                        "MOVE TO SETLIST",
+                        text = "ORDER IN \"${activePlaylist.uppercase()}\"",
                         style = MaterialTheme.typography.labelSmall,
                         color = Phosphor.GreenDim
                     )
-                    allSetlists.filter { it != menuSong.setlist }.forEach { target ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GreenButton(
-                            text = target,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = {
-                                vm.moveToSetlist(menuSong, target)
-                                menuForSong = null
-                            }
+                            text = "Move Up",
+                            modifier = Modifier.weight(1f),
+                            onClick = { moveInList(menuSong, -1) }
+                        )
+                        GreenButton(
+                            text = "Move Down",
+                            modifier = Modifier.weight(1f),
+                            onClick = { moveInList(menuSong, 1) }
                         )
                     }
                     GreenButton(
@@ -281,10 +354,26 @@ fun SongListScreen(
             }
         )
     }
+
+    // --- add-to-playlist chooser ---------------------------------------------
+    val pickerSong = pickerForSong
+    if (pickerSong != null) {
+        val memberOf = remember(entries, pickerSong.id) {
+            entries.filter { it.songId == pickerSong.id }.map { it.playlist }.toSet()
+        }
+        PlaylistPickerDialog(
+            songTitle = pickerSong.title,
+            playlists = playlists,
+            memberOf = memberOf,
+            onAdd = { vm.addToPlaylist(pickerSong, it) },
+            onRemove = { vm.removeFromPlaylist(pickerSong, it) },
+            onDismiss = { pickerForSong = null }
+        )
+    }
 }
 
 /**
- * Setlist with long-press drag-and-drop reordering.
+ * The Library or a playlist, with long-press drag-and-drop reordering on the handle.
  * Positions are written back to Room when the drag ends.
  */
 @Composable

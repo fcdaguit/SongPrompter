@@ -72,7 +72,15 @@ fun TeleprompterScreen(
     val state by vm.state.collectAsState()
     val detection by vm.detectorState.collectAsState()
 
+    val playlists by vm.playlists.collectAsState()
+    val playlistEntries by vm.playlistEntries.collectAsState()
+    val playlistMessage by vm.playlistMessage.collectAsState()
+
     var showSettings by remember { mutableStateOf(false) }
+    var showPlaylistPicker by remember { mutableStateOf(false) }
+
+    // A connected TV / projector / second monitor gets the lyrics only.
+    val secondScreen by SecondScreenLyrics(lines = state.lines, activeIndex = state.activeIndex)
     var hasMicPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
@@ -149,6 +157,27 @@ fun TeleprompterScreen(
             )
         }
 
+        if (secondScreen) {
+            Text(
+                text = "> SECOND SCREEN: LYRICS ONLY",
+                style = MaterialTheme.typography.labelSmall,
+                color = Phosphor.GreenDim,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp)
+            )
+        }
+
+        if (playlistMessage != null) {
+            Text(
+                text = "> $playlistMessage",
+                style = MaterialTheme.typography.bodySmall,
+                color = Phosphor.GreenBright,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(Unit) { detectTapGesturesCompat { vm.clearPlaylistMessage() } }
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
+            )
+        }
+
         if (showSettings) {
             SettingsPanel(
                 sensitivity = state.sensitivity,
@@ -203,6 +232,28 @@ fun TeleprompterScreen(
             GreenButton(text = "RESTART", onClick = { vm.restart() })
             GreenButton(text = "NEXT ▼", onClick = { vm.stepLine(1) }, modifier = Modifier.weight(1f))
         }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            GreenMiniButton(text = "+ ADD TO PLAYLIST", onClick = { showPlaylistPicker = true })
+        }
+    }
+
+    if (showPlaylistPicker) {
+        val memberOf = remember(playlistEntries, state.songId) {
+            playlistEntries.filter { it.songId == state.songId }.map { it.playlist }.toSet()
+        }
+        PlaylistPickerDialog(
+            songTitle = state.title,
+            playlists = playlists,
+            memberOf = memberOf,
+            onAdd = { vm.addToPlaylist(it) },
+            onRemove = { vm.removeFromPlaylist(it) },
+            onDismiss = { showPlaylistPicker = false }
+        )
     }
 }
 
@@ -253,7 +304,8 @@ private fun LyricRow(
         lyricSp = 30 * fontScale,
         chordSp = 22 * chordFontScale,
         lyricColor = color,
-        chordColor = if (isPast) Phosphor.GreenDim else Phosphor.GreenBright,
+        // Chords are white; the lyric colours above are unchanged.
+        chordColor = if (isPast) Phosphor.ChordDim else Phosphor.Chord,
         lyricWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
         centered = !showChords,
         modifier = Modifier

@@ -7,13 +7,16 @@ import com.chordflow.prompter.audio.AudioChordDetector
 import com.chordflow.prompter.core.ChordMatcher
 import com.chordflow.prompter.core.ChordParser
 import com.chordflow.prompter.core.ChordTransposer
+import com.chordflow.prompter.data.PlaylistEntry
 import com.chordflow.prompter.data.SettingsStore
 import com.chordflow.prompter.data.Song
 import com.chordflow.prompter.data.SongRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -76,6 +79,40 @@ class TeleprompterViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
+
+    // ---- playlists (for "Add to Playlist"; nothing to do with detection) ----
+
+    val playlists: StateFlow<List<String>> = repo.observePlaylists()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val playlistEntries: StateFlow<List<PlaylistEntry>> = repo.observeEntries()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _playlistMessage = MutableStateFlow<String?>(null)
+    val playlistMessage: StateFlow<String?> = _playlistMessage.asStateFlow()
+
+    fun addToPlaylist(playlist: String) {
+        val st = _state.value
+        if (!st.loaded) return
+        viewModelScope.launch {
+            val added = repo.addToPlaylist(st.songId, playlist)
+            _playlistMessage.value =
+                if (added) "Added to \"${playlist.trim()}\"." else "Already in \"${playlist.trim()}\"."
+        }
+    }
+
+    fun removeFromPlaylist(playlist: String) {
+        val st = _state.value
+        if (!st.loaded) return
+        viewModelScope.launch {
+            repo.removeFromPlaylist(st.songId, playlist)
+            _playlistMessage.value = "Removed from \"$playlist\"."
+        }
+    }
+
+    fun clearPlaylistMessage() {
+        _playlistMessage.value = null
+    }
 
     private var parsedSong: ChordParser.ParsedSong? = null
     private var lastAdvanceAt = 0L

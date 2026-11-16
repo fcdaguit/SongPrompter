@@ -11,7 +11,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** Strict monochrome stage palette: pure black, phosphor green. Nothing else. */
+/** Stage palette: pure black and phosphor green, with white reserved for chords. */
 object Phosphor {
     val Black = Color(0xFF000000)
     val Green = Color(0xFF00FF41)
@@ -19,6 +19,10 @@ object Phosphor {
     val GreenDim = Color(0xFF0A8F28)
     val GreenFaint = Color(0xFF064D16)
     val GreenGhost = Color(0xFF02240A)
+
+    /** Chords drawn with the lyrics are white so they stand apart from the green lyric. */
+    val Chord = Color(0xFFFFFFFF)
+    val ChordDim = Color(0x80FFFFFF)
 }
 
 private val ChordFlowColors = darkColorScheme(

@@ -20,14 +20,19 @@ data class Song(
     val transposeSemitones: Int = 0,
     val tempo: Int = 0,
     val content: String,
-    /** Name of the setlist this song sits in. */
+    /**
+     * Legacy column from before playlists had their own tables. Always [LIBRARY] now;
+     * kept so existing installs upgrade without rebuilding the songs table.
+     */
     val setlist: String = DEFAULT_SETLIST,
-    /** Sort order inside the setlist; drag-and-drop rewrites this. */
+    /** Sort order inside the Library; reordering rewrites this. */
     val position: Int = 0,
     val source: String = "",
     val updatedAt: Long = System.currentTimeMillis()
 ) {
     companion object {
-        const val DEFAULT_SETLIST = "Library"
+        /** The built-in list holding every song. Not a playlist, and cannot be deleted. */
+        const val LIBRARY = "Library"
+        const val DEFAULT_SETLIST = LIBRARY
     }
 }

@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
 private fun ChordFlowRoot() {
     val libraryVm: LibraryViewModel = viewModel()
     var screen by remember { mutableStateOf<Screen>(Screen.Library) }
-    val activeSetlist by libraryVm.activeSetlist.collectAsState()
+    val activePlaylist by libraryVm.activePlaylist.collectAsState()
 
     BackHandler(enabled = screen !is Screen.Library) {
         screen = Screen.Library
@@ -74,7 +74,7 @@ private fun ChordFlowRoot() {
             val vm: DownloaderViewModel = viewModel()
             SongDownloaderScreen(
                 vm = vm,
-                targetSetlist = activeSetlist,
+                targetPlaylist = activePlaylist,
                 onBack = { screen = Screen.Library }
             )
         }

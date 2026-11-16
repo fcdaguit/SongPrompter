@@ -11,14 +11,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface SongDao {
 
-    @Query("SELECT * FROM songs ORDER BY setlist ASC, position ASC, title ASC")
+    @Query("SELECT * FROM songs ORDER BY position ASC, title ASC")
     fun observeAll(): Flow<List<Song>>
-
-    @Query("SELECT * FROM songs WHERE setlist = :setlist ORDER BY position ASC, title ASC")
-    fun observeSetlist(setlist: String): Flow<List<Song>>
-
-    @Query("SELECT DISTINCT setlist FROM songs ORDER BY setlist ASC")
-    fun observeSetlists(): Flow<List<String>>
 
     @Query("SELECT * FROM songs WHERE id = :id")
     suspend fun getById(id: Long): Song?
@@ -29,8 +23,8 @@ interface SongDao {
     @Query("SELECT COUNT(*) FROM songs")
     suspend fun count(): Int
 
-    @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM songs WHERE setlist = :setlist")
-    suspend fun nextPosition(setlist: String): Int
+    @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM songs")
+    suspend fun nextPosition(): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(song: Song): Long
@@ -46,9 +40,6 @@ interface SongDao {
 
     @Query("UPDATE songs SET position = :position WHERE id = :id")
     suspend fun setPosition(id: Long, position: Int)
-
-    @Query("UPDATE songs SET setlist = :setlist, position = :position WHERE id = :id")
-    suspend fun moveToSetlist(id: Long, setlist: String, position: Int)
 
     @Query("UPDATE songs SET transposeSemitones = :semitones, updatedAt = :now WHERE id = :id")
     suspend fun setTranspose(id: Long, semitones: Int, now: Long)

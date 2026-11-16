@@ -207,7 +207,7 @@ fun SongEditorScreen(
                                 lyricSp = lyricSp,
                                 chordSp = chordSp,
                                 lyricColor = Phosphor.Green,
-                                chordColor = Phosphor.GreenBright,
+                                chordColor = Phosphor.Chord,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 2.dp)

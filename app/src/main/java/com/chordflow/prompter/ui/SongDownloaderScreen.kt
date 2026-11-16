@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.chordflow.prompter.data.Song
 import com.chordflow.prompter.net.OnlineSongRepository
 import com.chordflow.prompter.ui.theme.Phosphor
 import com.chordflow.prompter.vm.DownloaderViewModel
@@ -39,7 +40,7 @@ import com.chordflow.prompter.vm.DownloaderViewModel
 @Composable
 fun SongDownloaderScreen(
     vm: DownloaderViewModel,
-    targetSetlist: String,
+    targetPlaylist: String,
     onBack: () -> Unit
 ) {
     val state by vm.state.collectAsState()
@@ -55,7 +56,8 @@ fun SongDownloaderScreen(
     ) {
         GreenHeader(
             title = "Download Free Songs",
-            subtitle = "Saves into setlist: $targetSetlist",
+            subtitle = if (targetPlaylist == Song.LIBRARY) "Saves into your offline Library"
+            else "Saves into Library + playlist: $targetPlaylist",
             trailing = { GreenMiniButton(text = "BACK", onClick = onBack) }
         )
 
@@ -142,7 +144,7 @@ fun SongDownloaderScreen(
                 title = state.previewTitle,
                 loading = state.previewLoading,
                 text = state.previewText,
-                onSave = { vm.saveToOfflineLibrary(targetSetlist) },
+                onSave = { vm.saveToOfflineLibrary(targetPlaylist) },
                 onClose = { vm.dismissPreview() }
             )
         } else if (state.loading) {
