@@ -20,7 +20,8 @@ or inline) without affecting detection or auto-scroll.
 | **Display** | Pure black `#000000` with phosphor green `#00FF41` / `#39FF14`, monospace, screen kept awake in teleprompter mode. |
 | **Chord display modes** | Lyrics Only (default on stage), Chords Above Lyrics, or `[G]Inline`. **SHOW / HIDE CHORDS** in the stage HUD and **LYRICS ONLY / LYRICS + CHORDS** in the Song Editor switch instantly. Shown chords always follow the transposed key. Lyric and chord sizes are set separately. All of it is saved in DataStore. |
 | **Key changing** | Per-song saved transpose (-11..+11), a target-key picker, and `-1 / +1` buttons in the live stage HUD. Slash chords and extensions transpose with correct sharp/flat spelling. |
-| **Setlists** | Multiple named setlists, long-press drag-and-drop reordering, per-song key badges. |
+| **Playlists** | Every song lives in the offline Library; add any of them to as many named playlists as you like (from a song's menu or from the teleprompter) without copying. Reorder a playlist by long-press dragging the handle, or with Move Up / Move Down in the song menu. |
+| **Second screen** | With a TV, projector or monitor connected (HDMI, wireless display / screen mirroring, dual screen), the teleprompter puts the lyrics only on that screen, with no chords or controls, while the phone keeps its full view. |
 | **Seeded content** | Two public-domain hymns are written to the database on first launch, so the app works the moment it installs. |
 
 ---
@@ -111,7 +112,7 @@ ChordFlowPrompter/
             ├── ui/
             │   ├── theme/Theme.kt       monochrome green Material 3 theme
             │   ├── Components.kt        shared green widgets
-            │   ├── SongListScreen.kt    setlist manager, import, reorder
+            │   ├── SongListScreen.kt    Library + playlists, import, reorder
             │   ├── SongDownloaderScreen.kt
             │   ├── SongEditorScreen.kt  lyrics, key changer, preview
             │   └── TeleprompterScreen.kt stage view + HUD
@@ -174,7 +175,7 @@ layer rather than anything structural.
 ## 5. Using it on stage
 
 1. **Before the service** (on Wi-Fi): download or import your songs, set each one's key
-   in the editor, and drag them into Sunday's order in a setlist.
+   in the editor, add them to a playlist, and drag them into Sunday's order.
 2. **On stage** (no network needed): open the song, tap **MIC OFF** to start listening and
    grant the microphone permission the first time.
 3. The HUD shows `KEY: G`, `MIC: [G] -> NEXT: [D]` and an input-level meter.

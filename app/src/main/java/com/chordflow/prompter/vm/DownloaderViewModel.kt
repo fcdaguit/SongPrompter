@@ -134,13 +134,13 @@ class DownloaderViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Parse and store the previewed song permanently in Room. */
-    fun saveToOfflineLibrary(setlist: String) {
+    fun saveToOfflineLibrary(playlist: String) {
         val s = _state.value
         if (s.previewText.isBlank()) return
         viewModelScope.launch {
             local.addFromText(
                 text = s.previewText,
-                setlist = setlist,
+                playlist = playlist,
                 fallbackTitle = s.previewTitle,
                 source = s.previewUrl
             )
